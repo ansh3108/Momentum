@@ -10,5 +10,6 @@ public class Momentum implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        MomentumConfig.load();
     }
 }

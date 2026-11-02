@@ -1,5 +1,6 @@
 package com.momentum.mixin;
 
+import com.momentum.MomentumConfig;
 import com.momentum.physics.SpringDamperSolver;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.item.HeldItemRenderer;
@@ -15,10 +16,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class HeldItemRendererMixin {
 
     @Unique
-    private final SpringDamperSolver momentum$yawSpring = new SpringDamperSolver(14.0f, 0.9f);
+    private final SpringDamperSolver momentum$yawSpring = new SpringDamperSolver(6.0f, 0.6f);
 
     @Unique
-    private final SpringDamperSolver momentum$pitchSpring = new SpringDamperSolver(14.0f, 0.9f);
+    private final SpringDamperSolver momentum$pitchSpring = new SpringDamperSolver(6.0f, 0.6f);
 
     @Unique
     private float momentum$lastYaw = 0.0f;
@@ -26,7 +27,7 @@ public class HeldItemRendererMixin {
     @Unique
     private float momentum$lastPitch = 0.0f;
 
-    @Inject(method = "renderFirstPersonItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/math/MatrixStack;push()V", shift = At.Shift.AFTER))
+    @Inject(method = "renderFirstPersonItem", at = @At("HEAD"))
     private void momentum$applySpringInertia(
             net.minecraft.client.network.AbstractClientPlayerEntity player,
             float tickDelta,
@@ -38,10 +39,13 @@ public class HeldItemRendererMixin {
             MatrixStack matrices,
             net.minecraft.client.render.command.OrderedRenderCommandQueue vertexConsumers,
             int light,
-            CallbackInfo ci
-    ) {
+            CallbackInfo ci) {
+        if (!MomentumConfig.INSTANCE.enableViewmodelPhysics)
+            return;
+
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.isPaused() || client.player == null) return;
+        if (client.isPaused() || client.player == null)
+            return;
 
         float currentYaw = client.player.getYaw(tickDelta);
         float currentPitch = client.player.getPitch(tickDelta);
@@ -49,6 +53,7 @@ public class HeldItemRendererMixin {
         float yawDelta = currentYaw - momentum$lastYaw;
         float pitchDelta = currentPitch - momentum$lastPitch;
 
+        // Prevent aggressive snapping when wrapping around 360 degrees
         if (Math.abs(yawDelta) > 180.0f) {
             yawDelta = 0.0f;
         }
@@ -58,8 +63,7 @@ public class HeldItemRendererMixin {
 
         momentum$yawSpring.update(yawDelta, tickDelta);
         momentum$pitchSpring.update(pitchDelta, tickDelta);
-
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(momentum$yawSpring.getPosition() * 0.15f));
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(momentum$pitchSpring.getPosition() * 0.15f));
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(momentum$yawSpring.getPosition() * 1.2f));
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(momentum$pitchSpring.getPosition() * 1.2f));
     }
 }
