@@ -46,7 +46,7 @@ public class HeldItemRendererMixin {
             if (dt > 0.05f) dt = 0.05f; 
             momentum$lastFrameTime = now;
 
-            // --- 1. Camera Sway (AMPLIFIED) ---
+            // --- 1. Camera Sway ---
             float currentYaw = (float) player.getYaw();
             float currentPitch = (float) player.getPitch();
             float yawDelta = currentYaw - momentum$lastYaw;
@@ -58,22 +58,22 @@ public class HeldItemRendererMixin {
             momentum$lastYaw = currentYaw;
             momentum$lastPitch = currentPitch;
 
-            // Scaled up input delta for more drag
             momentum$swayYaw += (yawDelta * 2.5f - momentum$swayYaw) * (dt * 12.0f);
             momentum$swayPitch += (pitchDelta * 2.5f - momentum$swayPitch) * (dt * 12.0f);
 
-            // --- 2. Fall & Landing Impact (AMPLIFIED) ---
+            // --- 2. Fall & Landing Impact ---
             double yVelocity = player.getVelocity().y;
+            double fallDist = player.fallDistance;
             float targetImpact = 0.0f;
             
-            // Doubled the target impact ceiling from 3.0 to 6.0
-            if (!player.isOnGround() && yVelocity < -0.1) {
-                targetImpact = (float) Math.min(Math.abs(yVelocity) * 6.0, 6.0);
+            // Trigger exactly when falling past 1.0 block
+            if (!player.isOnGround() && yVelocity < -0.1 && fallDist > 1.0) {
+                float fallModifier = (float) Math.min((fallDist - 1.0) * 2.0, 1.0);
+                targetImpact = (float) Math.min(Math.abs(yVelocity) * 6.0, 6.0) * fallModifier;
             }
 
             float force = (targetImpact - momentum$impactPos) * 200.0f;
             momentum$impactVel += force * dt;
-            // Slightly reduced friction (12.0 -> 10.0) so it feels heavier and springier
             momentum$impactVel *= (1.0f - 10.0f * dt); 
             
             if (momentum$impactVel > 60.0f) momentum$impactVel = 60.0f;
@@ -81,7 +81,6 @@ public class HeldItemRendererMixin {
             
             momentum$impactPos += momentum$impactVel * dt;
 
-            // Widened clamps. If it hits the bottom clamp, invert velocity to "bounce"
             if (momentum$impactPos < -5.0f) {
                 momentum$impactPos = -5.0f;
                 momentum$impactVel *= -0.5f; 
@@ -91,7 +90,7 @@ public class HeldItemRendererMixin {
                 momentum$impactVel = 0.0f;
             }
 
-            // --- 3. Damage Flinch (AMPLIFIED) ---
+            // --- 3. Damage Flinch ---
             int hurtTime = player.hurtTime;
             float targetFlinch = 0.0f;
 
@@ -99,7 +98,6 @@ public class HeldItemRendererMixin {
                 if (hurtTime == player.maxHurtTime && momentum$lastHurtTime != hurtTime) {
                     momentum$flinchDirection = player.getRandom().nextBoolean() ? 1.0f : -1.0f;
                 }
-                // Jumped scale from 15.0 to 25.0
                 targetFlinch = (float) ((hurtTime / 10.0) * 25.0 * momentum$flinchDirection);
             }
             momentum$lastHurtTime = hurtTime;
@@ -114,17 +112,13 @@ public class HeldItemRendererMixin {
 
         float handModifier = (context == ItemDisplayContext.FIRST_PERSON_LEFT_HAND) ? -1.0f : 1.0f;
 
-        // --- APPLY MATRICES (CRANKED UP) ---
-        
-        // 1.5x Sway Rotation
+        // --- APPLY MATRICES ---
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(momentum$swayYaw * 1.5f));
         matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(momentum$swayPitch * 1.5f));
 
-        // Nearly 3x Impact Drop and Rotation
         matrices.translate(0.0f, momentum$impactPos * 0.04f, 0.0f);
         matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(momentum$impactPos * 4.0f));
 
-        // 3x Flinch Jolt
         matrices.translate(momentum$flinchPos * 0.015f * handModifier, 0.0f, 0.0f);
         matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(momentum$flinchPos * 2.5f * handModifier));
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(momentum$flinchPos * 1.5f * handModifier));
