@@ -1,15 +1,13 @@
 {
   "required": true,
-  "minVersion": "0.8",
   "package": "com.momentum.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
   ],
   "client": [
-    "HeldItemRendererMixin",
     "InGameHudMixin",
-    "ClientPlayerInteractionManagerMixin",
-    "WorldRendererMixin"
+    "HeldItemRendererMixin",
+    "EntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1
