@@ -11,6 +11,10 @@ Built around frame-rate independent spring-damper physics so every camera turn, 
 ### Tactile Viewmodel Physics
 Features smooth spring-driven item sway, heavy landing recoil on falls over 1 block and mathematically damped viewmodel flinch when taking damage.
 
+<img width="800" height="450" alt="download (1)" src="https://github.com/user-attachments/assets/56436b73-5b86-4ebd-8eca-09cfa490a0c9" />
+
+
+
 ### Minimalist Terminal HUD
 Features a deep-dark, neon-green terminal HUD with health, armor, and hunger readouts, delayed damage drain indicators, and subtle impact-based HUD shake.
 
